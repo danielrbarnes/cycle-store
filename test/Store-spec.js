@@ -356,6 +356,13 @@ describe('Store', function() {
             this.store.delete('child/key');
         });
 
+        it('does not emit event if item not in store', function() {
+            this.store.on(Store.Events.REMOVED, function() {
+                expect.fail('not called', 'called');
+            });
+            this.store.delete('dne');
+        });
+
     });
 
     describe('.clear', function() {
@@ -413,6 +420,41 @@ describe('Store', function() {
             grandchild.on('store-cleared', callback);
             this.store.on('store-cleared', callback);
             this.store.clear(true);
+        });
+
+        it('item added during clear is also cleared', function(done) {
+            var callCount = 0,
+                store = this.store;
+            store.on(Store.Events.REMOVED, function() {
+                if (++callCount === 1) {
+                    store.set('a', 123);
+                }
+            });
+            store.set('b', 456);
+            store.set('c', 789);
+            expect(callCount).to.equal(0);
+            store.clear();
+            expect(callCount).to.equal(3);
+            store.get('a').subscribe(function onNext() {
+                expect.fail('not exists', 'exists');
+            });
+            done();
+        });
+
+        it('item removed during clear does not skip other items', function() {
+            var calls = [],
+                store = this.store;
+            store.on(Store.Events.REMOVED, function(e) {
+                calls.push(e.name);
+                store.delete('b');
+            });
+            store.set('a', 123);
+            store.set('b', 123);
+            store.set('c', 123);
+            store.set('d', 123);
+            expect(calls).to.eql([]);
+            store.clear();
+            expect(calls).to.eql(['a', 'b', 'c', 'd']);
         });
 
     });

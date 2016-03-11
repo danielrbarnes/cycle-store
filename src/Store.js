@@ -349,8 +349,10 @@ export class Store extends Broker {
     delete(name) {
         throwIfInvalidName(name);
         let {store, items, prop} = getPropData(this, name);
-        items.delete(prop);
-        store.emit(Store.Events.REMOVED, {name: prop});
+        if (store.has(prop)) {
+            items.delete(prop);
+            store.emit(Store.Events.REMOVED, {name: prop});
+        }
     }
 
     /**
@@ -367,14 +369,13 @@ export class Store extends Broker {
      *     .clear();
      */
     clear(nested) {
-        data.get(this).items
-            .forEach((value, name, map) => {
-                map.delete(name);
-                this.emit(Store.Events.REMOVED, {name});
-            });
+        let meta = data.get(this);
+        meta.items.forEach((value, name, map) => {
+            map.delete(name);
+            this.emit(Store.Events.REMOVED, {name});
+        });
         if (!!nested) {
-            forOwn(data.get(this).children,
-                child => child.clear(true));
+            forOwn(meta.children, child => child.clear(true));
         }
         this.emit(Store.Events.CLEARED);
     }

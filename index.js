@@ -345,8 +345,10 @@ var Store = exports.Store = function (_Broker) {
             var items = _getPropData3.items;
             var prop = _getPropData3.prop;
 
-            items.delete(prop);
-            store.emit(Store.Events.REMOVED, { name: prop });
+            if (store.has(prop)) {
+                items.delete(prop);
+                store.emit(Store.Events.REMOVED, { name: prop });
+            }
         }
 
         /**
@@ -368,12 +370,13 @@ var Store = exports.Store = function (_Broker) {
         value: function clear(nested) {
             var _this2 = this;
 
-            data.get(this).items.forEach(function (value, name, map) {
+            var meta = data.get(this);
+            meta.items.forEach(function (value, name, map) {
                 map.delete(name);
                 _this2.emit(Store.Events.REMOVED, { name: name });
             });
             if (!!nested) {
-                (0, _lodash.forOwn)(data.get(this).children, function (child) {
+                (0, _lodash.forOwn)(meta.children, function (child) {
                     return child.clear(true);
                 });
             }
